@@ -15,17 +15,22 @@ async def lifespan(app: FastAPI):
         try:
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[Lifespan DB Warning] {e}")
 
     # Auto-seed sample engineering docs into vector store if empty
     try:
-        vstore = get_qdrant_store()
-        sample_dir = os.path.join(os.path.dirname(__file__), "..", "..", "docs_sample")
-        if os.path.exists(sample_dir):
-            run_ingestion(sample_dir)
+        possible_paths = [
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "docs_sample")),
+            os.path.abspath("docs_sample"),
+            "/var/task/docs_sample"
+        ]
+        for sample_dir in possible_paths:
+            if os.path.exists(sample_dir):
+                run_ingestion(sample_dir)
+                break
     except Exception as e:
-        print(f"[Lifespan Warning] Auto-ingestion error: {e}")
+        print(f"[Lifespan Ingestion Warning] {e}")
 
     yield
 
