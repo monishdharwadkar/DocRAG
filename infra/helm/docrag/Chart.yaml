@@ -1,0 +1,6 @@
+apiVersion: v2
+name: docrag
+description: Helm chart for DocRAG self-healing multi-agent RAG chatbot on Kubernetes / RKE2
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

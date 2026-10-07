@@ -1,0 +1,38 @@
+replicaCount: 2
+
+image:
+  repository: docrag-backend
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8000
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 75
+
+qdrant:
+  enabled: true
+  replicaCount: 1
+  port: 6333
+  image: qdrant/qdrant:latest
+
+postgres:
+  enabled: true
+  image: postgres:15-alpine
+  database: docrag
+  user: postgres
+  password: postgrespassword
+
+redis:
+  enabled: true
+  image: redis:7-alpine
+  port: 6379
+
+metrics:
+  serviceMonitor:
+    enabled: true

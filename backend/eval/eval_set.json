@@ -1,0 +1,152 @@
+[
+  {
+    "id": 1,
+    "question": "What is the scale down stabilization window for HPA?",
+    "expected_answer": "The scale down stabilization window is 300 seconds (5 minutes) to prevent flapping.",
+    "document": "docs_sample/k8s_hpa_runbook.md"
+  },
+  {
+    "id": 2,
+    "question": "What is the maximum number of replicas configured per service deployment in HPA?",
+    "expected_answer": "The maximum number of replicas is 50 pods per service deployment.",
+    "document": "docs_sample/k8s_hpa_runbook.md"
+  },
+  {
+    "id": 3,
+    "question": "What is the target CPU utilization threshold for HPA?",
+    "expected_answer": "The default target CPU utilization threshold is 75% across all running replicas.",
+    "document": "docs_sample/k8s_hpa_runbook.md"
+  },
+  {
+    "id": 4,
+    "question": "What action should be taken if an emergency traffic overload occurs and HPA hits max replicas?",
+    "expected_answer": "Manually scale up deployment using kubectl scale deployment --replicas=30.",
+    "document": "docs_sample/k8s_hpa_runbook.md"
+  },
+  {
+    "id": 5,
+    "question": "What is the required response time for SEV-0 incidents?",
+    "expected_answer": "The required response time for SEV-0 incidents is less than 5 minutes.",
+    "document": "docs_sample/incident_postmortem_template.md"
+  },
+  {
+    "id": 6,
+    "question": "When must the Incident Commander draft the postmortem document after resolution?",
+    "expected_answer": "Within 24 hours of incident resolution.",
+    "document": "docs_sample/incident_postmortem_template.md"
+  },
+  {
+    "id": 7,
+    "question": "What methodology is used to perform root cause analysis during a postmortem?",
+    "expected_answer": "The 5-Whys methodology.",
+    "document": "docs_sample/incident_postmortem_template.md"
+  },
+  {
+    "id": 8,
+    "question": "What is the SLA response time requirement for SEV-1 incidents?",
+    "expected_answer": "Less than 15 minutes.",
+    "document": "docs_sample/incident_postmortem_template.md"
+  },
+  {
+    "id": 9,
+    "question": "What Python version is required for backend services during onboarding?",
+    "expected_answer": "Python 3.11+ is required for backend services.",
+    "document": "docs_sample/engineering_onboarding.md"
+  },
+  {
+    "id": 10,
+    "question": "What tool is used for local pre-commit hooks setup?",
+    "expected_answer": "pre-commit package running black, ruff, and ESLint automatically.",
+    "document": "docs_sample/engineering_onboarding.md"
+  },
+  {
+    "id": 11,
+    "question": "What VPN client is required to connect to internal clusters?",
+    "expected_answer": "WireGuard VPN client.",
+    "document": "docs_sample/engineering_onboarding.md"
+  },
+  {
+    "id": 12,
+    "question": "What naming convention must be used for URL path segments in REST APIs?",
+    "expected_answer": "kebab-case for URL path segments and parameter keys with plural nouns for resource names.",
+    "document": "docs_sample/api_design_guide.md"
+  },
+  {
+    "id": 13,
+    "question": "What version prefix must be included in all endpoint paths?",
+    "expected_answer": "The versioning prefix /api/v1/.",
+    "document": "docs_sample/api_design_guide.md"
+  },
+  {
+    "id": 14,
+    "question": "What are the default and maximum page limits for pagination?",
+    "expected_answer": "Default page limit is 20 and maximum page limit is 100.",
+    "document": "docs_sample/api_design_guide.md"
+  },
+  {
+    "id": 15,
+    "question": "What pattern must be followed to avoid dropping columns in a single release?",
+    "expected_answer": "The Expand-Contract pattern over 2 separate deployments.",
+    "document": "docs_sample/database_migration_policy.md"
+  },
+  {
+    "id": 16,
+    "question": "What SQL clause must be used when creating indexes on large production tables?",
+    "expected_answer": "CREATE INDEX CONCURRENTLY.",
+    "document": "docs_sample/database_migration_policy.md"
+  },
+  {
+    "id": 17,
+    "question": "What lock timeout should be set prior to executing DDL operations in Alembic?",
+    "expected_answer": "Set lock timeout to 2 seconds.",
+    "document": "docs_sample/database_migration_policy.md"
+  },
+  {
+    "id": 18,
+    "question": "What pre-commit tool automatically scans git commits for secrets?",
+    "expected_answer": "gitleaks pre-commit hook.",
+    "document": "docs_sample/security_secrets_management.md"
+  },
+  {
+    "id": 19,
+    "question": "How are HashiCorp Vault secrets injected into Kubernetes pods?",
+    "expected_answer": "Dynamically injected via Vault Agent Sidecar Injector.",
+    "document": "docs_sample/security_secrets_management.md"
+  },
+  {
+    "id": 20,
+    "question": "What format convention do Vault secret paths follow?",
+    "expected_answer": "secret/data/environment/service-name.",
+    "document": "docs_sample/security_secrets_management.md"
+  },
+  {
+    "id": 21,
+    "question": "What code coverage percentage is required to allow merging pull requests?",
+    "expected_answer": "Greater than 80% code coverage.",
+    "document": "docs_sample/ci_cd_pipeline_standards.md"
+  },
+  {
+    "id": 22,
+    "question": "What tool is used for continuous deployment to staging environment?",
+    "expected_answer": "ArgoCD automatically deploys to staging on merge to main.",
+    "document": "docs_sample/ci_cd_pipeline_standards.md"
+  },
+  {
+    "id": 23,
+    "question": "What automated action occurs if ArgoCD deployment health checks fail within 3 minutes?",
+    "expected_answer": "ArgoCD sync policy triggers automated rollbacks.",
+    "document": "docs_sample/ci_cd_pipeline_standards.md"
+  },
+  {
+    "id": 24,
+    "question": "Where are production deployment manual approvals requested?",
+    "expected_answer": "In Slack channel #release-approvals.",
+    "document": "docs_sample/ci_cd_pipeline_standards.md"
+  },
+  {
+    "id": 25,
+    "question": "What container security scanning tool is used in the CI pipeline?",
+    "expected_answer": "Trivy is used for scanning container image vulnerabilities.",
+    "document": "docs_sample/ci_cd_pipeline_standards.md"
+  }
+]

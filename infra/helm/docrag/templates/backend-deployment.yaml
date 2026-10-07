@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "docrag.fullname" . }}-backend
+  labels:
+    app: docrag-backend
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: docrag-backend
+  template:
+    metadata:
+      labels:
+        app: docrag-backend
+    spec:
+      containers:
+        - name: backend
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          env:
+            - name: USE_MOCK_LLM
+              value: "true"
+            - name: QDRANT_HOST
+              value: "{{ include "docrag.fullname" . }}-qdrant"
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@{{ include "docrag.fullname" . }}-postgres:5432/{{ .Values.postgres.database }}"
+            - name: REDIS_URL
+              value: "redis://{{ include "docrag.fullname" . }}-redis:6379/0"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
