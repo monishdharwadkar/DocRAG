@@ -1,5 +1,6 @@
 import json
 import asyncio
+import re
 from app.config import settings
 
 try:
@@ -38,13 +39,13 @@ class LLMClient:
             response = await self.client.chat.completions.create(**kwargs)
             return response.choices[0].message.content
         except Exception as e:
-            print(f"[LLMClient Error] vLLM request failed: {e}. Falling back to mock output.")
+            print(f"[LLMClient Error] vLLM request failed: {e}. Falling back to dynamic mock output.")
             return await self._mock_generate(prompt)
 
     async def _mock_generate(self, prompt: str) -> str:
         await asyncio.sleep(0.01)
         
-        # Check if the prompt is asking for validation / structured evaluation output
+        # 1. Check if the prompt is asking for validation / structured evaluation output
         if "groundedness_score" in prompt or "validation" in prompt.lower() or "unsupported_claims" in prompt:
             if "[FORCE_FAIL]" in prompt or "unsupported_claim_test" in prompt:
                 return json.dumps({
@@ -60,25 +61,43 @@ class LLMClient:
                 "unsupported_claims": []
             })
         
-        # Check if prompt is a question rewriting task (retrieval agent)
+        # 2. Check if prompt is a question rewriting task (retrieval agent)
         if "condense follow-up" in prompt.lower() or "standalone question" in prompt.lower():
             lines = [l.strip() for l in prompt.split("\n") if l.strip()]
             return lines[-1] if lines else "What is the engineering procedure?"
 
-        # Default mock response generator based on context in prompt
+        # 3. Dynamic RAG Answer Generation from Context
         if "Context:" in prompt or "context" in prompt.lower():
-            sources = []
-            if "[Source: " in prompt:
-                import re
-                matches = re.findall(r'\[Source:\s*([^\]]+)\]', prompt)
-                sources = list(set(matches))
-            
-            citation_str = f" [Source: {sources[0]}]" if sources else " [Source: docs_sample/k8s_hpa_runbook.md#HPA Configuration]"
-            
-            if "correction" in prompt.lower() or "previously flagged" in prompt.lower():
-                return f"Based strictly on the verified documentation, here is the corrected response.{citation_str} All metrics and procedures follow the documented standard guidelines."
+            # Extract question text if present
+            question = ""
+            if "User Question:" in prompt:
+                question = prompt.split("User Question:")[1].split("\n")[0].strip()
+            elif "Question:" in prompt:
+                question = prompt.split("Question:")[1].split("\n")[0].strip()
 
-            return f"According to the internal engineering documentation, the system follows standard operating procedures.{citation_str} Ensure all health checks and configurations match the deployment specification."
+            # Parse context blocks: [Source: filepath#heading]\ncontent
+            blocks = re.findall(r'\[Source:\s*([^\]]+)\]\s*\n([^\[]+)', prompt)
+            
+            if blocks:
+                best_source, best_text = blocks[0]
+                q_words = set(re.findall(r'\w+', question.lower())) - {"what", "is", "the", "for", "a", "an", "in", "to", "of", "and", "how", "where", "which", "are"}
+                
+                max_matches = -1
+                for source_tag, text_content in blocks:
+                    text_words = set(re.findall(r'\w+', text_content.lower()))
+                    overlap = len(q_words.intersection(text_words))
+                    if overlap > max_matches:
+                        max_matches = overlap
+                        best_source = source_tag
+                        best_text = text_content.strip()
+
+                clean_lines = [line.strip() for line in best_text.split("\n") if line.strip() and not line.strip().startswith("#")]
+                answer_body = " ".join(clean_lines[:5]) if clean_lines else best_text[:400]
+                
+                citation = f"[Source: {best_source}]"
+                return f"Based strictly on internal engineering documentation, {answer_body} {citation}"
+
+            return "According to the internal engineering documentation, standard operating procedures must be followed for all cluster deployments. [Source: docs_sample/k8s_hpa_runbook.md#HPA Configuration Parameters]"
         
         return "DocRAG standard mock response: The requested engineering documentation specifies standard system operations and guidelines."
 
