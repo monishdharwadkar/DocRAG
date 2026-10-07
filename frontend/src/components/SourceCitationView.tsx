@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { FileText, ExternalLink, X } from 'lucide-react';
 
 export interface SourceItem {
-  source_path: str;
-  heading: str;
-  chunk_id: str;
+  source_path: string;
+  heading: string;
+  chunk_id: string;
   score?: number;
-  text?: str;
+  text?: string;
 }
 
 interface SourceCitationViewProps {
