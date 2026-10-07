@@ -3,6 +3,14 @@ from app.config import settings
 
 Base = declarative_base()
 
+class DummyScalar:
+    def all(self):
+        return []
+
+class DummyResult:
+    def scalars(self):
+        return DummyScalar()
+
 class DummySession:
     async def __aenter__(self):
         return self
@@ -10,6 +18,10 @@ class DummySession:
         pass
     def add(self, obj):
         pass
+    async def get(self, entity, ident):
+        return None
+    async def execute(self, statement):
+        return DummyResult()
     async def commit(self):
         pass
     async def close(self):
@@ -24,12 +36,8 @@ try:
         engine = create_async_engine(settings.DATABASE_URL, echo=False, future=True)
         AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     except Exception:
-        try:
-            engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False, future=True)
-            AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-        except Exception:
-            engine = None
-            AsyncSessionLocal = DummySessionLocal
+        engine = None
+        AsyncSessionLocal = DummySessionLocal
 except Exception:
     engine = None
     AsyncSessionLocal = DummySessionLocal

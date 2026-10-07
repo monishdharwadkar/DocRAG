@@ -41,32 +41,35 @@ class ChatResponse(BaseModel):
 async def chat_agentic_endpoint(request: ChatRequest):
     session_id = request.session_id or str(uuid.uuid4())
     message_id = str(uuid.uuid4())
+    chat_history = []
 
-    async with AsyncSessionLocal() as db:
-        # Ensure ChatSession exists
-        session_obj = await db.get(ChatSession, session_id)
-        if not session_obj:
-            session_obj = ChatSession(id=session_id, title=request.message[:40])
-            db.add(session_obj)
+    # Safe DB load (gracefully skip if DB is unavailable)
+    try:
+        async with AsyncSessionLocal() as db:
+            session_obj = await db.get(ChatSession, session_id)
+            if not session_obj:
+                session_obj = ChatSession(id=session_id, title=request.message[:40])
+                db.add(session_obj)
 
-        # Store user message
-        user_msg = ChatMessage(
-            id=str(uuid.uuid4()),
-            session_id=session_id,
-            role="user",
-            content=request.message
-        )
-        db.add(user_msg)
-        await db.commit()
+            user_msg = ChatMessage(
+                id=str(uuid.uuid4()),
+                session_id=session_id,
+                role="user",
+                content=request.message
+            )
+            db.add(user_msg)
+            await db.commit()
 
-        # Fetch recent chat history
-        res = await db.execute(
-            select(ChatMessage)
-            .where(ChatMessage.session_id == session_id)
-            .order_by(ChatMessage.created_at.asc())
-        )
-        history_msgs = res.scalars().all()
-        chat_history = [{"role": m.role, "content": m.content} for m in history_msgs]
+            res = await db.execute(
+                select(ChatMessage)
+                .where(ChatMessage.session_id == session_id)
+                .order_by(ChatMessage.created_at.asc())
+            )
+            history_msgs = res.scalars().all()
+            chat_history = [{"role": m.role, "content": m.content} for m in history_msgs]
+    except Exception as e:
+        print(f"[Chat API Warning] DB load skipped: {e}")
+        chat_history = []
 
     # Initialize GraphState
     initial_state = {
@@ -92,7 +95,7 @@ async def chat_agentic_endpoint(request: ChatRequest):
     traces = final_state.get("traces", [])
     retry_count = final_state.get("retry_count", 0)
 
-    # Determine low confidence flag (if validation failed after max retries)
+    # Determine low confidence flag
     low_confidence = not val_res.get("passed", False) if retry_count >= 2 else False
 
     sources = [
@@ -116,17 +119,20 @@ async def chat_agentic_endpoint(request: ChatRequest):
         for t in traces
     ]
 
-    # Store assistant message in DB
-    async with AsyncSessionLocal() as db:
-        assistant_msg = ChatMessage(
-            id=message_id,
-            session_id=session_id,
-            role="assistant",
-            content=answer,
-            sources=[s.dict() for s in sources]
-        )
-        db.add(assistant_msg)
-        await db.commit()
+    # Safe DB save (gracefully skip if DB is unavailable)
+    try:
+        async with AsyncSessionLocal() as db:
+            assistant_msg = ChatMessage(
+                id=message_id,
+                session_id=session_id,
+                role="assistant",
+                content=answer,
+                sources=[s.dict() for s in sources]
+            )
+            db.add(assistant_msg)
+            await db.commit()
+    except Exception as e:
+        print(f"[Chat API Warning] DB save skipped: {e}")
 
     return ChatResponse(
         session_id=session_id,
@@ -167,7 +173,6 @@ async def chat_websocket(websocket: WebSocket):
             "traces": []
         }
 
-        # Stream LangGraph state updates
         async for event in doc_rag_graph.astream(initial_state):
             for node_name, node_output in event.items():
                 await websocket.send_json({
@@ -181,7 +186,6 @@ async def chat_websocket(websocket: WebSocket):
                     }
                 })
 
-        # Final answer yield
         final_state = await doc_rag_graph.ainvoke(initial_state)
         answer = final_state.get("draft_answer", "")
         chunks = final_state.get("retrieved_chunks", [])
